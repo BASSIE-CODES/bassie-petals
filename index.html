@@ -49,90 +49,148 @@ line.active {
 
 <script>
 let game = {
-cookies:0,
-cps:0,
-rebirths:0,
-rebirthCost:720000000,
+    cookies: 0,
+    cps: 0,
+    upgrades: {
+        root: { name: "Root", icon: "🌱", cost: 15, power: 1, count: 0, req: null, x: 50, y: 50 },
 
-upgrades:{
-root:{name:"Root",cost:15,power:1,count:0,req:null,x:50,y:50},
+        water: { name: "Dew Drop", icon: "💧", cost: 100, power: 5, count: 0, req: 'root', x: 30, y: 300 },
+        mist: { name: "Mist", icon: "🌫️", cost: 500, power: 15, count: 0, req: 'water', x: 20, y: 550 },
+        rain: { name: "Storm", icon: "⛈️", cost: 2500, power: 50, count: 0, req: 'mist', x: 15, y: 800 },
+        ocean: { name: "Tide", icon: "🌊", cost: 15000, power: 200, count: 0, req: 'rain', x: 20, y: 1100 },
 
-water:{name:"Water",cost:100,power:5,count:0,req:"root",x:30,y:300},
-sun:{name:"Sun",cost:150,power:8,count:0,req:"root",x:70,y:300},
+        sun: { name: "Sunlight", icon: "☀️", cost: 150, power: 8, count: 0, req: 'root', x: 70, y: 300 },
+        bloom: { name: "Flower", icon: "🌻", cost: 800, power: 25, count: 0, req: 'sun', x: 80, y: 550 },
+        garden: { name: "Garden", icon: "🏡", cost: 4000, power: 80, count: 0, req: 'bloom', x: 85, y: 800 },
+        forest: { name: "Forest", icon: "🌳", cost: 25000, power: 500, count: 0, req: 'garden', x: 80, y: 1100 },
 
-/* 🔓 HIDDEN AFTER REBIRTH */
-secret1:{name:"Bassie Core",cost:5000,power:200,count:0,req:"sun",x:50,y:600, hidden:true},
-secret2:{name:"Bassie God",cost:20000,power:1000,count:0,req:"secret1",x:50,y:900, hidden:true}
-}
+        bee: { name: "Worker Bee", icon: "🐝", cost: 2000, power: 60, count: 0, req: 'mist', x: 40, y: 850 },
+        hive: { name: "The Hive", icon: "🍯", cost: 10000, power: 150, count: 0, req: 'bee', x: 50, y: 1100 },
+
+        spirit: { name: "Spirit", icon: "👻", cost: 100000, power: 1000, count: 0, req: 'hive', x: 50, y: 1400 },
+        nebula: { name: "Cosmos", icon: "🌌", cost: 500000, power: 5000, count: 0, req: 'spirit', x: 40, y: 1700 },
+        void: { name: "The Void", icon: "🌑", cost: 2000000, power: 20000, count: 0, req: 'nebula', x: 50, y: 2000 },
+
+        dandy: { name: "Dandy", icon: "✨", cost: 1000000, power: 12000, count: 0, req: 'spirit', x: 65, y: 1700 },
+        bassie: { name: "Bassie", icon: "🎀", cost: 5000000, power: 100000, count: 0, req: 'dandy', x: 60, y: 2000 }
+    }
 };
 
-function rebirth(){
-if(game.cookies >= game.rebirthCost){
+function initNodes() {
+    const container = document.getElementById('nodes-container');
 
-game.cookies=0;
-game.cps=0;
-game.rebirths++;
+    for (let id in game.upgrades) {
+        const up = game.upgrades[id];
 
-/* 🔓 UNLOCK HIDDEN NODES */
-for(let id in game.upgrades){
-if(game.upgrades[id].hidden){
-document.getElementById("node-"+id).classList.remove("hiddenNode");
-}
-}
+        const div = document.createElement('div');
+        div.id = `node-${id}`;
+        div.className = 'node';
+        div.style.left = `${up.x}%`;
+        div.style.top = `${up.y}px`;
 
-game.rebirthCost *= 5;
-update();
-}
-}
+        div.onclick = () => buy(id);
 
-function initNodes(){
-let c=document.getElementById("nodes-container");
+        div.innerHTML = `
+            <div class="node-content">
+                <span class="node-icon">${up.icon}</span>
+                <strong>${up.name}</strong>
+                <span class="price">Cost: <span id="cost-${id}">${up.cost}</span></span>
+                <div id="own-${id}">Owned: 0</div>
+                ${up.req ? `<div style="font-size:10px;">Req: ${up.req}</div>` : ""}
+            </div>
+        `;
 
-for(let id in game.upgrades){
-let u=game.upgrades[id];
-
-let d=document.createElement("div");
-d.id="node-"+id;
-d.className="node";
-
-if(u.hidden) d.classList.add("hiddenNode");
-
-d.style.left=u.x+"%";
-d.style.top=u.y+"px";
-
-d.onclick=()=>buy(id);
-
-d.innerHTML=`
-<b>${u.name}</b><br>
-${u.cost}
-`;
-
-c.appendChild(d);
-}
+        container.appendChild(div);
+    }
 }
 
-function drawLines(){
-let svg=document.getElementById("tree-svg");
-svg.innerHTML="";
+function toggleTree() {
+    const tree = document.getElementById('tree-overlay');
 
-for(let id in game.upgrades){
-let u=game.upgrades[id];
-if(u.req){
-let p=game.upgrades[u.req];
+    tree.style.display = tree.style.display === 'block' ? 'none' : 'block';
 
-let line=document.createElementNS("http://www.w3.org/2000/svg","line");
-
-line.setAttribute("x1",p.x+"%");
-line.setAttribute("y1",(p.y+65)+"px");
-line.setAttribute("x2",u.x+"%");
-line.setAttribute("y2",(u.y+65)+"px");
-
-if(p.count>0) line.classList.add("active");
-
-svg.appendChild(line);
+    if (tree.style.display === 'block') {
+        setTimeout(drawLines, 50); // FIX blank bug
+    }
 }
+
+function buy(id) {
+    const up = game.upgrades[id];
+
+    if (up.req && game.upgrades[up.req].count === 0) return;
+
+    if (game.cookies >= up.cost) {
+        game.cookies -= up.cost;
+        up.count++;
+        game.cps += up.power;
+        up.cost = Math.round(up.cost * 1.4);
+
+        update();
+        drawLines();
+    }
 }
+
+function drawLines() {
+    const svg = document.getElementById('tree-svg');
+    svg.innerHTML = '';
+
+    for (let id in game.upgrades) {
+        const up = game.upgrades[id];
+
+        if (up.req) {
+            const parent = game.upgrades[up.req];
+
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+
+            line.setAttribute("x1", `${parent.x * 10}`);
+            line.setAttribute("y1", parent.y + 65);
+            line.setAttribute("x2", `${up.x * 10}`);
+            line.setAttribute("y2", up.y + 65);
+
+            if (parent.count > 0) line.classList.add('active');
+
+            svg.appendChild(line);
+        }
+    }
 }
+
+function update() {
+    document.getElementById('count').innerText = Math.floor(game.cookies);
+    document.getElementById('cps').innerText = game.cps;
+
+    for (let id in game.upgrades) {
+        const up = game.upgrades[id];
+        const el = document.getElementById(`node-${id}`);
+
+        document.getElementById(`cost-${id}`).innerText = up.cost;
+        document.getElementById(`own-${id}`).innerText = "Owned: " + up.count;
+
+        if (up.count > 0) el.className = 'node purchased';
+        else if (!up.req || game.upgrades[up.req].count > 0) el.className = 'node available';
+        else el.className = 'node locked';
+    }
+}
+
+document.getElementById('cookie').onclick = () => {
+    game.cookies++;
+    update();
+};
+
+setInterval(() => {
+    game.cookies += game.cps / 10;
+    update();
+}, 100);
+
+// 🔥 THIS FIXES YOUR BLANK SCREEN
+window.onload = () => {
+    try {
+        initNodes();
+        update();
+    } catch (e) {
+        console.error("ERROR:", e);
+        alert("Something broke. Open console.");
+    }
+};
 </script>
 
 </body>
