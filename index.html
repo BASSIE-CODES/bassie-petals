@@ -1,225 +1,271 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Bassie's Bloom Tree - Persistent</title>
-    <style>
-        :root { 
-            --bg: #1e1b29; 
-            --lavender-haze: rgba(147, 112, 219, 0.7);
-            --bassie-pink: #ffb7c5;
-            --bassie-purple: #9370db;
-            --locked: #2d2a3d; 
-            --unlocked: #483d8b; 
-        }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; overflow: hidden; }
-        
-        #game-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: radial-gradient(circle, #2d2a3d 0%, #1e1b29 100%); }
-        #stats { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.6); padding: 20px; border-radius: 15px; border: 2px solid var(--bassie-purple); }
-        .big-count { font-size: 3rem; color: var(--bassie-pink); font-weight: bold; text-shadow: 0 0 10px var(--bassie-purple); }
-        
-        /* Growing Flower */
-        #cookie { font-size: 150px; cursor: pointer; transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); user-select: none; filter: hue-rotate(280deg); }
-        #cookie:active { transform: scale(0.8); }
+<title>Bassie’s Game World</title>
 
-        #tree-overlay { position: fixed; inset: 0; background: #13111c; display: none; z-index: 1000; overflow: auto; padding: 50px; }
-        .tree-wrapper { position: relative; width: 1000px; margin: 0 auto; height: 1800px; padding-top: 50px; }
-        
-        svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-        line { stroke: #333; stroke-width: 5; stroke-linecap: round; }
-        line.active { stroke: var(--bassie-purple); filter: drop-shadow(0 0 5px var(--bassie-pink)); }
+<style>
+body {
+    background-color: #1a1a2e;
+    color: #f5c6ff;
+    font-family: Arial;
+    text-align: center;
+    margin: 0;
+}
 
-        .node { 
-            position: absolute; width: 130px; height: 130px; background: var(--locked);
-            border: 4px solid #444; border-radius: 50%; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; text-align: center; font-size: 0.75rem;
-            cursor: pointer; transition: 0.4s; transform: translateX(-50%); z-index: 2;
-        }
-        .node.available { background: var(--unlocked); border-color: var(--bassie-purple); }
-        .node.purchased { background: var(--bassie-purple); border-color: var(--bassie-pink); box-shadow: 0 0 25px var(--bassie-purple); }
-        .node.locked::after { content: ""; position: absolute; inset: -5px; background: var(--lavender-haze); border-radius: 50%; filter: blur(8px); pointer-events: none; }
-        
-        .btn-ui { padding: 15px 40px; background: var(--bassie-purple); color: white; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 1.2rem; }
-        .save-msg { position: fixed; bottom: 20px; right: 20px; font-size: 0.8rem; color: #666; }
-    </style>
+h1 {
+    background-color: #2e1a47;
+    color: #ff9de2;
+    padding: 15px;
+}
+
+.tabs {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.tab-button {
+    background: #ff9de2;
+    border: none;
+    padding: 10px 15px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 10px;
+}
+
+.section { display:none; }
+.active { display:block; }
+
+.game-box {
+    background-color: #2b2b3c;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 15px;
+    width: 80%;
+    position: relative;
+}
+
+/* SKILLS */
+.skill {
+    position:absolute;
+    padding:10px;
+    border-radius:10px;
+    cursor:pointer;
+    width:90px;
+    text-align:center;
+    font-size:12px;
+}
+
+.locked {
+    background: rgba(140,110,190,0.3);
+    filter: brightness(0.6);
+}
+
+.unlocked {
+    background:#ff9de2;
+    color:black;
+}
+</style>
 </head>
-<body onclick="startMusic()">
 
-    <div id="game-view">
-        <div id="stats">
-            <div>Petals: <span class="big-count" id="count">0</span></div>
-            <div>CPS: <span id="cps">0</span></div>
-        </div>
-        <div id="cookie">🌸</div>
-        <button class="btn-ui" style="margin-top: 50px;" onclick="toggleTree()">BLOOM TREE</button>
-        <button onclick="resetGame()" style="margin-top: 10px; background:none; border:none; color:#444; cursor:pointer;">Reset Save</button>
-    </div>
+<body>
 
-    <div id="tree-overlay">
-        <button class="btn-ui" style="position:fixed; top:20px; right:20px; z-index:1001; background:#6b21a8;" onclick="toggleTree()">EXIT</button>
-        <div class="tree-wrapper">
-            <svg id="tree-svg"></svg>
-            <div id="nodes-container"></div>
-        </div>
-    </div>
+<h1>🎀 Bassie’s Game World 🎀</h1>
 
-    <div class="save-msg">Progress saves automatically ✨</div>
+<div class="tabs">
+<button class="tab-button" onclick="openTab('games')">Games</button>
+<button class="tab-button" onclick="openTab('clicker')">Clicker</button>
+<button class="tab-button" onclick="openTab('tutorials')">Tutorials</button>
+<button class="tab-button" onclick="openTab('rpg')">RPG Tree</button>
+<button class="tab-button" onclick="openTab('progress')">Progress</button>
+</div>
 
-    <audio id="bg-music" loop>
-        <source src="https://www.bensound.com" type="audio/mpeg">
-    </audio>
+<!-- GAMES -->
+<div id="games" class="section active">
+<div class="game-box">
+<h3>Slope</h3>
+<a href="https://geometryboss.com/games/slope/" target="_blank"><button>Play</button></a>
 
-    <script>
-        let musicStarted = false;
-        const buySfx = new Audio('https://www.zapsplat.com');
-        const clickSfx = new Audio('https://www.zapsplat.com');
+<h3>Subway Surfers</h3>
+<a href="https://geometryboss.com/games/subwaysurfers/" target="_blank"><button>Play</button></a>
 
-        let game = {
-            cookies: 0,
-            cps: 0,
-            upgrades: {
-                root: { name: "Bassie's Seed", icon: "🌱", cost: 15, power: 1, count: 0, req: null, x: 50, y: 50 },
-                water: { name: "Dew Drop", icon: "💧", cost: 100, power: 5, count: 0, req: 'root', x: 30, y: 300 },
-                sun: { name: "Soft Glow", icon: "☀️", cost: 150, power: 8, count: 0, req: 'root', x: 70, y: 300 },
-                mist: { name: "Lavender Mist", icon: "🌫️", cost: 500, power: 20, count: 0, req: 'water', x: 20, y: 550 },
-                bloom: { name: "Spring Bloom", icon: "🌻", cost: 800, power: 35, count: 0, req: 'sun', x: 80, y: 550 },
-                spirit: { name: "Bassie's Spirit", icon: "👻", cost: 5000, power: 150, count: 0, req: 'mist', x: 50, y: 800 },
-                bassie: { name: "Bassie", icon: "🧺", cost: 50000, power: 1000, count: 0, req: 'spirit', x: 50, y: 1100 }
-            }
-        };
+<h3>BitLife</h3>
+<a href="https://geometryboss.com/games/bitlife/" target="_blank"><button>Play</button></a>
+</div>
+</div>
 
-        // SAVE & LOAD LOGIC
-        function save() {
-            localStorage.setItem("BassieBloomSave", JSON.stringify(game));
-        }
+<!-- CLICKER -->
+<div id="clicker" class="section">
+<div class="game-box">
+<p id="score">Score: 0</p>
+<p id="mult">Multiplier: 1x</p>
+<button onclick="clickGame()">Click</button>
+<button onclick="rebirth()">Rebirth (720M)</button>
+</div>
+</div>
 
-        function load() {
-            const saved = localStorage.getItem("BassieBloomSave");
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                // Merge loaded counts/costs back into the structure
-                game.cookies = parsed.cookies;
-                game.cps = parsed.cps;
-                for (let id in parsed.upgrades) {
-                    if (game.upgrades[id]) {
-                        game.upgrades[id].count = parsed.upgrades[id].count;
-                        game.upgrades[id].cost = parsed.upgrades[id].cost;
-                    }
-                }
-            }
-        }
+<!-- TUTORIAL -->
+<div id="tutorials" class="section">
+<div class="game-box">
+<p>Click to earn points. Unlock skills. Rebirth to get stronger.</p>
+</div>
+</div>
 
-        function startMusic() {
-            if (!musicStarted) {
-                document.getElementById('bg-music').play().catch(()=>{});
-                musicStarted = true;
-            }
-        }
+<!-- RPG -->
+<div id="rpg" class="section">
+<div class="game-box" style="height:900px;">
 
-        function initNodes() {
-            const container = document.getElementById('nodes-container');
-            container.innerHTML = "";
-            for (let id in game.upgrades) {
-                const up = game.upgrades[id];
-                const div = document.createElement('div');
-                div.id = `node-${id}`;
-                div.className = 'node';
-                div.style.left = `${up.x}%`;
-                div.style.top = `${up.y}px`;
-                div.onclick = (e) => { e.stopPropagation(); buy(id); };
-                div.innerHTML = `<div class="node-content"><span>${up.icon}</span><br><strong>${up.name}</strong><br><span id="cost-text-${id}" style="color:#ffb7c5">${up.cost}</span></div>`;
-                container.appendChild(div);
-            }
-        }
+<h2>INSANE RPG TREE</h2>
 
-        function buy(id) {
-            const up = game.upgrades[id];
-            if (up.req && game.upgrades[up.req].count === 0) return;
-            if (game.cookies >= up.cost) {
-                game.cookies -= up.cost;
-                up.count++;
-                game.cps += up.power;
-                up.cost = Math.round(up.cost * 1.4);
-                buySfx.play();
-                update();
-                drawLines();
-                save();
-            }
-        }
+<svg id="lines" width="100%" height="900"
+style="position:absolute; top:0; left:0;"></svg>
 
-        function drawLines() {
-            const svg = document.getElementById('tree-svg');
-            svg.innerHTML = '';
-            for (let id in game.upgrades) {
-                const up = game.upgrades[id];
-                if (up.req) {
-                    const parent = game.upgrades[up.req];
-                    const line = document.createElementNS("http://www.w3.org", "line");
-                    line.setAttribute("x1", `${parent.x}%`); line.setAttribute("y1", `${parent.y + 65}px`);
-                    line.setAttribute("x2", `${up.x}%`); line.setAttribute("y2", `${up.y + 65}px`);
-                    if (parent.count > 0) line.classList.add('active');
-                    svg.appendChild(line);
-                }
-            }
-        }
+<!-- ROOT -->
+<div id="s1" class="skill locked" onclick="buySkill('s1')" style="top:40px; left:45%;">Start<br>FREE</div>
 
-        function update() {
-            document.getElementById('count').innerText = Math.floor(game.cookies);
-            document.getElementById('cps').innerText = game.cps.toFixed(1);
-            
-            // Evolve the flower based on CPS
-            const size = 150 + (Math.min(game.cps / 10, 100));
-            const glow = Math.min(game.cps / 5, 40);
-            const cookie = document.getElementById('cookie');
-            cookie.style.fontSize = size + "px";
-            cookie.style.filter = `hue-rotate(280deg) drop-shadow(0 0 ${glow}px var(--bassie-pink))`;
+<!-- ROW 2 -->
+<div id="s2" class="skill locked" onclick="buySkill('s2')" style="top:140px; left:25%;">+1<br>100</div>
+<div id="s3" class="skill locked" onclick="buySkill('s3')" style="top:140px; left:65%;">Auto<br>200</div>
 
-            for (let id in game.upgrades) {
-                const up = game.upgrades[id];
-                const el = document.getElementById(`node-${id}`);
-                const costTxt = document.getElementById(`cost-text-${id}`);
-                if(costTxt) costTxt.innerText = up.cost;
+<!-- ROW 3 -->
+<div id="s4" class="skill locked" onclick="buySkill('s4')" style="top:260px; left:10%;">x2<br>500</div>
+<div id="s5" class="skill locked" onclick="buySkill('s5')" style="top:260px; left:35%;">Boost<br>700</div>
+<div id="s6" class="skill locked" onclick="buySkill('s6')" style="top:260px; left:60%;">Multi<br>900</div>
+<div id="s7" class="skill locked" onclick="buySkill('s7')" style="top:260px; left:85%;">Crit<br>1200</div>
 
-                if (up.count > 0) el.className = 'node purchased';
-                else if (!up.req || game.upgrades[up.req].count > 0) el.className = 'node available';
-                else el.className = 'node locked';
-            }
-        }
+<!-- ROW 4 -->
+<div id="s8" class="skill locked" onclick="buySkill('s8')" style="top:400px; left:20%;">Mega<br>2000</div>
+<div id="s9" class="skill locked" onclick="buySkill('s9')" style="top:400px; left:50%;">Ultra<br>3000</div>
+<div id="s10" class="skill locked" onclick="buySkill('s10')" style="top:400px; left:80%;">God<br>5000</div>
 
-        function toggleTree() {
-            const tree = document.getElementById('tree-overlay');
-            tree.style.display = tree.style.display === 'block' ? 'none' : 'block';
-            if(tree.style.display === 'block') drawLines();
-        }
+</div>
+</div>
 
-        function resetGame() {
-            if(confirm("Erase all petals and start over?")) {
-                localStorage.removeItem("BassieBloomSave");
-                location.reload();
-            }
-        }
+<!-- PROGRESS -->
+<div id="progress" class="section">
+<div class="game-box">
+<p id="progressText"></p>
+<button onclick="updateProgress()">Refresh</button>
+</div>
+</div>
 
-        document.getElementById('cookie').onclick = (e) => { 
-            e.stopPropagation(); 
-            game.cookies++; 
-            clickSfx.currentTime = 0;
-            clickSfx.play(); 
-            update(); 
-            if(game.cookies % 10 === 0) save(); // Autosave every 10 clicks
-        };
+<script>
 
-        setInterval(() => { 
-            game.cookies += game.cps/10; 
-            update(); 
-        }, 100);
+let score=0, clickPower=1, multiplier=1;
+let unlocked={};
 
-        setInterval(save, 10000); // Autosave every 10 seconds
+const skills={
+s1:{cost:0,parent:null,effect:()=>{}},
+s2:{cost:100,parent:"s1",effect:()=>clickPower++},
+s3:{cost:200,parent:"s1",effect:()=>startAuto()},
+s4:{cost:500,parent:"s2",effect:()=>clickPower*=2},
+s5:{cost:700,parent:"s2",effect:()=>clickPower+=5},
+s6:{cost:900,parent:"s3",effect:()=>multiplier+=1},
+s7:{cost:1200,parent:"s3",effect:()=>multiplier+=2},
+s8:{cost:2000,parent:"s4",effect:()=>clickPower+=20},
+s9:{cost:3000,parent:"s5",effect:()=>multiplier+=5},
+s10:{cost:5000,parent:"s6",effect:()=>multiplier+=10}
+};
 
-        window.onload = () => { 
-            load();
-            initNodes(); 
-            update(); 
-        };
-    </script>
+function clickGame(){
+score+=clickPower*multiplier;
+update();
+}
+
+function rebirth(){
+if(score>=720000000){
+score=0;
+clickPower=1;
+multiplier=1;
+unlocked={};
+document.querySelectorAll(".skill").forEach(s=>{
+s.classList.remove("unlocked");
+s.classList.add("locked");
+});
+update();
+}
+}
+
+function buySkill(id){
+let s=skills[id];
+if(unlocked[id]) return;
+if(s.parent && !unlocked[s.parent]) return;
+if(score>=s.cost){
+score-=s.cost;
+unlocked[id]=true;
+document.getElementById(id).classList.add("unlocked");
+document.getElementById(id).classList.remove("locked");
+s.effect();
+update();
+}
+}
+
+function startAuto(){
+setInterval(()=>{score+=multiplier;update();},1000);
+}
+
+function update(){
+document.getElementById("score").innerText="Score: "+score;
+document.getElementById("mult").innerText="Multiplier: "+multiplier+"x";
+}
+
+function updateProgress(){
+document.getElementById("progressText").innerText=
+"Score: "+score+
+"\nClick: "+clickPower+
+"\nMulti: "+multiplier+
+"\nSkills: "+Object.keys(unlocked).length;
+}
+
+function openTab(tab){
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+document.getElementById(tab).classList.add("active");
+}
+
+/* PERFECT LINES */
+function drawLine(a,b){
+let e1=document.getElementById(a);
+let e2=document.getElementById(b);
+let box=document.querySelector("#rpg .game-box");
+let svg=document.getElementById("lines");
+
+let r1=e1.getBoundingClientRect();
+let r2=e2.getBoundingClientRect();
+let rb=box.getBoundingClientRect();
+
+let line=document.createElementNS("http://www.w3.org/2000/svg","line");
+
+line.setAttribute("x1",r1.left-rb.left+r1.width/2);
+line.setAttribute("y1",r1.top-rb.top+r1.height/2);
+line.setAttribute("x2",r2.left-rb.left+r2.width/2);
+line.setAttribute("y2",r2.top-rb.top+r2.height/2);
+
+line.setAttribute("stroke","#ff9de2");
+line.setAttribute("stroke-width","4");
+
+svg.appendChild(line);
+}
+
+function drawTree(){
+drawLine("s1","s2");
+drawLine("s1","s3");
+
+drawLine("s2","s4");
+drawLine("s2","s5");
+
+drawLine("s3","s6");
+drawLine("s3","s7");
+
+drawLine("s4","s8");
+drawLine("s5","s9");
+drawLine("s6","s10");
+}
+
+window.onload=drawTree;
+
+update();
+
+</script>
+
 </body>
 </html>
